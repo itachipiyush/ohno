@@ -1,0 +1,215 @@
+-- Table Creation
+
+CREATE TABLE Employee (
+    Eid NUMBER PRIMARY KEY,
+    EName VARCHAR2(50),
+    Address VARCHAR2(100),
+    DateOfJoining DATE,
+    Department VARCHAR2(10)
+);
+
+CREATE TABLE Project (
+    Pid NUMBER PRIMARY KEY,
+    PName VARCHAR2(50),
+    StartDate DATE,
+    TerminationDate DATE
+);
+
+CREATE TABLE AssignedTo (
+    Eid NUMBER,
+    Pid NUMBER,
+    FOREIGN KEY (Eid) REFERENCES Employee(Eid),
+    FOREIGN KEY (Pid) REFERENCES Project(Pid)
+);
+
+CREATE TABLE Student (
+    Roll NUMBER PRIMARY KEY,
+    SName VARCHAR2(50),
+    City VARCHAR2(50),
+    Age NUMBER,
+    Gender VARCHAR2(10)
+);
+
+CREATE TABLE Course (
+    Cid NUMBER PRIMARY KEY,
+    CName VARCHAR2(50),
+    Semester NUMBER,
+    Credits NUMBER,
+    Fee NUMBER
+);
+
+CREATE TABLE Enrollment (
+    Roll NUMBER,
+    Cid NUMBER,
+    DateOfReg DATE,
+    FOREIGN KEY (Roll) REFERENCES Student(Roll),
+    FOREIGN KEY (Cid) REFERENCES Course(Cid)
+);
+
+-- Data Insertion
+
+INSERT INTO Employee VALUES (1, 'Jai Prakash', 'Delhi', TO_DATE('2020-05-10', 'YYYY-MM-DD'), 'D01');
+INSERT INTO Employee VALUES (2, 'Kunal', 'Mumbai', TO_DATE('2021-06-15', 'YYYY-MM-DD'), 'D02');
+INSERT INTO Employee VALUES (3, 'Anita', 'Delhi', TO_DATE('2022-07-20', 'YYYY-MM-DD'), 'D01');
+INSERT INTO Employee VALUES (4, 'Rahul', 'Bangalore', TO_DATE('2019-09-25', 'YYYY-MM-DD'), 'D03');
+
+INSERT INTO Project VALUES (1, 'Banking', TO_DATE('2020-01-01', 'YYYY-MM-DD'), TO_DATE('2022-12-31', 'YYYY-MM-DD'));
+INSERT INTO Project VALUES (2, 'University', TO_DATE('2021-02-01', 'YYYY-MM-DD'), TO_DATE('2023-03-31', 'YYYY-MM-DD'));
+INSERT INTO Project VALUES (3, 'ShareMarket', TO_DATE('2021-06-01', 'YYYY-MM-DD'), TO_DATE('2024-06-01', 'YYYY-MM-DD'));
+
+INSERT INTO AssignedTo VALUES (1, 1);
+INSERT INTO AssignedTo VALUES (2, 2);
+INSERT INTO AssignedTo VALUES (3, 3);
+INSERT INTO AssignedTo VALUES (1, 3);
+
+INSERT INTO Student VALUES (1, 'Anita', 'Delhi', 22, 'Female');
+INSERT INTO Student VALUES (2, 'Kunal', 'Mumbai', 23, 'Male');
+INSERT INTO Student VALUES (3, 'Rahul', 'Chennai', 21, 'Male');
+
+INSERT INTO Course VALUES (1, 'MCA', 3, 18, 20000);
+INSERT INTO Course VALUES (2, 'MBA', 4, 20, 25000);
+
+INSERT INTO Enrollment VALUES (1, 1, TO_DATE('2023-01-15', 'YYYY-MM-DD'));
+INSERT INTO Enrollment VALUES (2, 1, TO_DATE('2023-01-16', 'YYYY-MM-DD'));
+INSERT INTO Enrollment VALUES (3, 2, TO_DATE('2023-02-01', 'YYYY-MM-DD'));
+
+-- Queries in SQL and Relational Algebra
+
+-- 1. Employees working on 'Banking' project
+SELECT EName FROM Employee e 
+JOIN AssignedTo a ON e.Eid = a.Eid
+JOIN Project p ON a.Pid = p.Pid
+WHERE p.PName = 'Banking';
+
+-- Relational Algebra: π_EName(σ_PName='Banking' (Employee ⨝ AssignedTo ⨝ Project))
+
+-- 2. Projects assigned to employees of D01 or D02
+SELECT PName FROM Project p
+JOIN AssignedTo a ON p.Pid = a.Pid
+JOIN Employee e ON a.Eid = e.Eid
+WHERE e.Department IN ('D01', 'D02');
+
+-- Relational Algebra: π_PName(σ_Department='D01' OR Department='D02' (Employee ⨝ AssignedTo ⨝ Project))
+
+-- 3. Employees from Delhi working on 'University' or 'ShareMarket'
+SELECT EName FROM Employee e
+JOIN AssignedTo a ON e.Eid = a.Eid
+JOIN Project p ON a.Pid = p.Pid
+WHERE e.Address = 'Delhi' AND p.PName IN ('University', 'ShareMarket');
+
+-- Relational Algebra: π_EName(σ_Address='Delhi' AND (PName='University' OR PName='ShareMarket') (Employee ⨝ AssignedTo ⨝ Project))
+
+-- 4. Employees not working on 'University' project
+SELECT EName FROM Employee
+WHERE Eid NOT IN (
+    SELECT a.Eid FROM AssignedTo a
+    JOIN Project p ON a.Pid = p.Pid
+    WHERE p.PName = 'University'
+);
+
+-- Relational Algebra: π_EName(Employee) - π_EName(σ_PName='University'(Employee ⨝ AssignedTo ⨝ Project))
+
+-- 5. Employees working on all projects
+SELECT EName FROM Employee e
+WHERE NOT EXISTS (
+    SELECT Pid FROM Project p
+    WHERE NOT EXISTS (
+        SELECT 1 FROM AssignedTo a
+        WHERE a.Eid = e.Eid AND a.Pid = p.Pid
+    )
+);
+
+-- Relational Algebra: π_EName(σ_∀Projects(Employee ⨝ AssignedTo))
+
+-- 6. Employees not assigned any project
+SELECT EName FROM Employee e
+WHERE NOT EXISTS (
+    SELECT 1 FROM AssignedTo a WHERE e.Eid = a.Eid
+);
+
+-- Relational Algebra: π_EName(Employee) - π_EName(AssignedTo)
+
+-- 7. Employees who joined after 'Bank' project start
+SELECT EName FROM Employee e
+JOIN Project p ON p.PName = 'Banking'
+WHERE e.DateOfJoining > p.StartDate;
+
+-- Relational Algebra: π_EName(σ_DateOfJoining > StartDate(Employee ⨝ Project))
+
+-- 8. Start and termination dates of 'Jai Prakash's projects
+SELECT StartDate, TerminationDate FROM Project p
+JOIN AssignedTo a ON p.Pid = a.Pid
+JOIN Employee e ON a.Eid = e.Eid
+WHERE e.EName = 'Jai Prakash';
+
+-- Relational Algebra: π_StartDate, TerminationDate(σ_EName='Jai Prakash'(Employee ⨝ AssignedTo ⨝ Project))
+
+-- Student-Course Queries
+
+-- 1. Students registered in MCA course
+SELECT * FROM Student s
+JOIN Enrollment e ON s.Roll = e.Roll
+JOIN Course c ON e.Cid = c.Cid
+WHERE c.CName = 'MCA';
+
+-- 2. Total number of students enrolled in MBA
+SELECT COUNT(*) AS TotalStudents FROM Enrollment e
+JOIN Course c ON e.Cid = c.Cid
+WHERE c.CName = 'MBA';
+
+-- 3. Students enrolled in same course as 'Anita'
+SELECT s2.SName FROM Student s1
+JOIN Enrollment e1 ON s1.Roll = e1.Roll
+JOIN Enrollment e2 ON e1.Cid = e2.Cid
+JOIN Student s2 ON e2.Roll = s2.Roll
+WHERE s1.SName = 'Anita' AND s1.Roll != s2.Roll;
+
+-- 4. Names of students with date of enrollment
+SELECT s.SName, e.DateOfReg FROM Student s
+JOIN Enrollment e ON s.Roll = e.Roll;
+
+-- 5. Name of course 'Kunal' is registered in
+SELECT c.CName FROM Course c
+JOIN Enrollment e ON c.Cid = e.Cid
+JOIN Student s ON e.Roll = s.Roll
+WHERE s.SName = 'Kunal';
+
+-- 6. Names of boys enrolled in MCA
+SELECT s.SName FROM Student s
+JOIN Enrollment e ON s.Roll = e.Roll
+JOIN Course c ON e.Cid = c.Cid
+WHERE s.Gender = 'Male' AND c.CName = 'MCA';
+
+-- 7. Number of students in MCA outside Delhi
+SELECT COUNT(*) AS OutsideDelhi FROM Student s
+JOIN Enrollment e ON s.Roll = e.Roll
+JOIN Course c ON e.Cid = c.Cid
+WHERE c.CName = 'MCA' AND s.City != 'Delhi';
+
+-- Function Examples
+SELECT 
+    SQRT(16) AS SqrtExample,
+    POWER(2, 3) AS PowerExample,
+    CEIL(2.3) AS CeilExample,
+    FLOOR(2.7) AS FloorExample,
+    ABS(-10) AS AbsExample,
+    MOD(10, 3) AS ModExample,
+    GREATEST(10, 20, 5) AS GreatestExample,
+    ROUND(15.678, 2) AS RoundExample,
+    TO_DATE('2023-11-25', 'YYYY-MM-DD') AS ToDateExample,
+    MONTHS_BETWEEN(SYSDATE, TO_DATE('2023-01-01', 'YYYY-MM-DD')) AS MonthsBetweenExample,
+    LAST_DAY(SYSDATE) AS LastDayExample,
+    ADD_MONTHS(SYSDATE, 2) AS AddMonthsExample,
+    NEXT_DAY(SYSDATE, 'FRIDAY') AS NextDayExample,
+    SYSDATE AS SysdateExample,
+    LENGTH('Hello World') AS LengthExample,
+    SUBSTR('Oracle', 1, 3) AS SubstrExample,
+    LOWER('HELLO') AS LowerExample,
+    INITCAP('oracle sql') AS InitcapExample,
+    INSTR('Hello World', 'World') AS InstrExample,
+    CONCAT('Oracle', 'SQL') AS ConcatExample,
+    LPAD('123', 5, '0') AS LpadExample,
+    RPAD('123', 5, '*') AS RpadExample,
+    LTRIM('  Oracle') AS LtrimExample,
+    RTRIM('Oracle  ') AS RtrimExample,
+    REPLACE('Oracle SQL', 'SQL', 'DBMS') AS ReplaceExample;
