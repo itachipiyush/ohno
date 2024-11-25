@@ -1,0 +1,202 @@
+-- Reverse a given number
+DELIMITER //
+CREATE PROCEDURE ReverseNumber()
+BEGIN
+    DECLARE num INT DEFAULT 12345;
+    DECLARE rev_num INT DEFAULT 0;
+
+    WHILE num > 0 DO
+        SET rev_num = rev_num * 10 + MOD(num, 10);
+        SET num = FLOOR(num / 10);
+    END WHILE;
+    SELECT rev_num AS 'Reversed Number';
+END;
+//
+DELIMITER ;
+
+CALL ReverseNumber();
+
+-- Accept emp_id from user and display record
+DELIMITER //
+CREATE PROCEDURE GetEmployeeRecord(IN emp_id INT)
+BEGIN
+    SELECT * FROM Employee WHERE EmpId = emp_id;
+END;
+//
+DELIMITER ;
+
+CALL GetEmployeeRecord(1);
+
+-- Calculate factorial of first five even numbers
+DELIMITER //
+CREATE PROCEDURE CalculateFactorials()
+BEGIN
+    DECLARE num INT DEFAULT 2;
+    DECLARE fact INT DEFAULT 1;
+    DECLARE i INT;
+
+    CREATE TEMPORARY TABLE IF NOT EXISTS Factorial (No INT, Fact INT);
+
+    WHILE num <= 10 DO
+        SET fact = 1;
+        SET i = 1;
+
+        WHILE i <= num DO
+            SET fact = fact * i;
+            SET i = i + 1;
+        END WHILE;
+
+        INSERT INTO Factorial (No, Fact) VALUES (num, fact);
+        SET num = num + 2;
+    END WHILE;
+
+    SELECT * FROM Factorial;
+END;
+//
+DELIMITER ;
+
+CALL CalculateFactorials();
+
+-- Mark inactive accounts and log them
+DELIMITER //
+CREATE PROCEDURE MarkInactiveAccounts()
+BEGIN
+    DECLARE done INT DEFAULT FALSE;
+    DECLARE acc_no INT;
+    DECLARE acc_name VARCHAR(255);
+    DECLARE acc_balance DECIMAL(10, 2);
+    DECLARE cur CURSOR FOR SELECT AccNo, Name, Balance FROM Account WHERE Status = 'Active' AND LastTransaction < DATE_SUB(CURDATE(), INTERVAL 6 MONTH);
+    DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;
+
+    CREATE TEMPORARY TABLE IF NOT EXISTS InactiveAccounts (AccNo INT, Name VARCHAR(255), Balance DECIMAL(10, 2));
+
+    OPEN cur;
+    read_loop: LOOP
+        FETCH cur INTO acc_no, acc_name, acc_balance;
+        IF done THEN
+            LEAVE read_loop;
+        END IF;
+        UPDATE Account SET Status = 'Inactive' WHERE AccNo = acc_no;
+        INSERT INTO InactiveAccounts (AccNo, Name, Balance) VALUES (acc_no, acc_name, acc_balance);
+    END LOOP;
+    CLOSE cur;
+
+    SELECT * FROM InactiveAccounts;
+END;
+//
+DELIMITER ;
+
+CALL MarkInactiveAccounts();
+
+-- Cursor to display employees with salary > 15000
+DELIMITER //
+CREATE PROCEDURE DisplayHighSalaryEmployees()
+BEGIN
+    DECLARE done INT DEFAULT FALSE;
+    DECLARE emp_name VARCHAR(255);
+    DECLARE dob DATE;
+    DECLARE designation VARCHAR(255);
+    DECLARE cur CURSOR FOR SELECT EName, DOB, Designation FROM Employee WHERE Salary > 15000;
+    DECLARE CONTINUE HANDLER FOR NOT FOUND SET done = TRUE;
+
+    OPEN cur;
+    read_loop: LOOP
+        FETCH cur INTO emp_name, dob, designation;
+        IF done THEN
+            LEAVE read_loop;
+        END IF;
+        SELECT emp_name AS EName, dob AS DOB, designation AS Designation;
+    END LOOP;
+    CLOSE cur;
+END;
+//
+DELIMITER ;
+
+CALL DisplayHighSalaryEmployees();
+
+-- Function to return employee salary
+DELIMITER //
+CREATE FUNCTION GetSalary(emp_id INT) RETURNS DECIMAL(10, 2)
+DETERMINISTIC
+BEGIN
+    DECLARE emp_salary DECIMAL(10, 2);
+
+    SELECT Salary INTO emp_salary FROM Employee WHERE EmpId = emp_id;
+    RETURN emp_salary;
+END;
+//
+DELIMITER ;
+
+SELECT GetSalary(1);
+
+-- Function to check odd or even
+DELIMITER //
+CREATE FUNCTION ODDEVEN(num INT) RETURNS BOOLEAN
+DETERMINISTIC
+BEGIN
+    RETURN MOD(num, 2) = 0;
+END;
+//
+DELIMITER ;
+
+SELECT ODDEVEN(4) AS IsEven;
+SELECT ODDEVEN(5) AS IsEven;
+
+
+
+
+
+
+
+-- Employee Table
+CREATE TABLE Employee (
+    EmpId INT PRIMARY KEY,
+    EName VARCHAR(100),
+    DOJ DATE,
+    DOB DATE,
+    Salary DECIMAL(10, 2),
+    Address VARCHAR(255),
+    Designation VARCHAR(100)
+);
+
+-- Insert values into Employee
+INSERT INTO Employee (EmpId, EName, DOJ, DOB, Salary, Address, Designation) VALUES (1, 'John Doe', '2020-01-15', '1990-06-25', 20000, 'New York', 'Manager');
+INSERT INTO Employee (EmpId, EName, DOJ, DOB, Salary, Address, Designation) VALUES (2, 'Jane Smith', '2018-07-10', '1988-03-12', 15000, 'Los Angeles', 'Developer');
+INSERT INTO Employee (EmpId, EName, DOJ, DOB, Salary, Address, Designation) VALUES (3, 'Alice Johnson', '2015-05-20', '1992-11-10', 25000, 'Chicago', 'Analyst');
+
+-- Factorial Table
+CREATE TABLE Factorial (
+    No INT PRIMARY KEY,
+    Fact BIGINT
+);
+
+-- Insert dummy values (table is populated programmatically)
+INSERT INTO Factorial (No, Fact) VALUES (2, 2);
+INSERT INTO Factorial (No, Fact) VALUES (4, 24);
+
+-- Account Table
+CREATE TABLE Account (
+    AccNo INT PRIMARY KEY,
+    Name VARCHAR(100),
+    Address VARCHAR(255),
+    PANNo VARCHAR(15),
+    Mobile VARCHAR(15),
+    Status VARCHAR(10),
+    Balance DECIMAL(10, 2),
+    LastTransaction DATE
+);
+
+-- Insert values into Account
+INSERT INTO Account (AccNo, Name, Address, PANNo, Mobile, Status, Balance, LastTransaction) VALUES (101, 'John Doe', 'New York', 'ABCDE1234F', '1234567890', 'Active', 5000, '2024-03-01');
+INSERT INTO Account (AccNo, Name, Address, PANNo, Mobile, Status, Balance, LastTransaction) VALUES (102, 'Jane Smith', 'Los Angeles', 'XYZ9876T', '9876543210', 'Active', 15000, '2024-10-01');
+INSERT INTO Account (AccNo, Name, Address, PANNo, Mobile, Status, Balance, LastTransaction) VALUES (103, 'Alice Johnson', 'Chicago', 'LMN4567P', '5678912345', 'Active', 3000, '2023-12-01');
+
+-- InactiveAccounts Table
+CREATE TABLE InactiveAccounts (
+    AccNo INT PRIMARY KEY,
+    Name VARCHAR(100),
+    Balance DECIMAL(10, 2)
+);
+
+-- Insert dummy values
+INSERT INTO InactiveAccounts (AccNo, Name, Balance) VALUES (101, 'John Doe', 5000);

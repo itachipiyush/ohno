@@ -1,0 +1,163 @@
+-- Reverse a given number
+DECLARE
+    num NUMBER := 12345;
+    rev_num NUMBER := 0;
+BEGIN
+    WHILE num > 0 LOOP
+        rev_num := rev_num * 10 + MOD(num, 10);
+        num := TRUNC(num / 10);
+    END LOOP;
+    DBMS_OUTPUT.PUT_LINE('Reversed Number: ' || rev_num);
+END;
+/
+
+-- Accept emp_id from user and display record
+DECLARE
+    emp_id NUMBER;
+    emp_record Employee%ROWTYPE;
+BEGIN
+    emp_id := &Enter_Emp_Id;
+    SELECT * INTO emp_record FROM Employee WHERE EmpId = emp_id;
+    DBMS_OUTPUT.PUT_LINE('EmpId: ' || emp_record.EmpId || ', EName: ' || emp_record.EName || ', DOJ: ' || emp_record.DOJ || ', DOB: ' || emp_record.DOB || ', Salary: ' || emp_record.Salary || ', Address: ' || emp_record.Address);
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        DBMS_OUTPUT.PUT_LINE('No record found for EmpId: ' || emp_id);
+END;
+/
+
+-- Calculate factorial of first five even numbers
+DECLARE
+    num NUMBER := 2;
+    fact NUMBER := 1;
+BEGIN
+    FOR i IN 1..5 LOOP
+        fact := 1;
+        FOR j IN 1..num LOOP
+            fact := fact * j;
+        END LOOP;
+        INSERT INTO Factorial (No, Fact) VALUES (num, fact);
+        num := num + 2;
+    END LOOP;
+END;
+/
+
+-- Mark inactive accounts and log them
+DECLARE
+    CURSOR inactive_accounts IS
+        SELECT AccNo, Name, Balance FROM Account WHERE Status = 'Active' AND LastTransaction < ADD_MONTHS(SYSDATE, -6);
+    acc_record inactive_accounts%ROWTYPE;
+BEGIN
+    OPEN inactive_accounts;
+    LOOP
+        FETCH inactive_accounts INTO acc_record;
+        EXIT WHEN inactive_accounts%NOTFOUND;
+        UPDATE Account SET Status = 'Inactive' WHERE AccNo = acc_record.AccNo;
+        INSERT INTO InactiveAccounts (AccNo, Name, Balance) VALUES (acc_record.AccNo, acc_record.Name, acc_record.Balance);
+    END LOOP;
+    CLOSE inactive_accounts;
+END;
+/
+
+-- Cursor to display employees with salary > 15000
+DECLARE
+    CURSOR high_salary IS
+        SELECT EName, DOB, Designation FROM Employee WHERE Salary > 15000;
+    emp_record high_salary%ROWTYPE;
+BEGIN
+    OPEN high_salary;
+    LOOP
+        FETCH high_salary INTO emp_record;
+        EXIT WHEN high_salary%NOTFOUND;
+        DBMS_OUTPUT.PUT_LINE('EName: ' || emp_record.EName || ', DOB: ' || emp_record.DOB || ', Designation: ' || emp_record.Designation);
+    END LOOP;
+    CLOSE high_salary;
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        DBMS_OUTPUT.PUT_LINE('No employees found with salary > 15000.');
+END;
+/
+
+-- Function to return employee salary
+CREATE OR REPLACE FUNCTION GetSalary(emp_id NUMBER) RETURN NUMBER IS
+    emp_salary NUMBER;
+BEGIN
+    SELECT Salary INTO emp_salary FROM Employee WHERE EmpId = emp_id;
+    RETURN emp_salary;
+EXCEPTION
+    WHEN NO_DATA_FOUND THEN
+        RETURN NULL;
+END;
+/
+
+SELECT GetSalary(1);
+
+-- Function to check odd or even
+CREATE OR REPLACE FUNCTION ODDEVEN(num NUMBER) RETURN BOOLEAN IS
+BEGIN
+    IF MOD(num, 2) = 0 THEN
+        RETURN TRUE;
+    ELSE
+        RETURN FALSE;
+    END IF;
+END;
+/
+
+SELECT ODDEVEN(5) AS IsEven;
+
+
+
+
+
+-- Employee Table
+CREATE TABLE Employee (
+    EmpId NUMBER PRIMARY KEY,
+    EName VARCHAR2(100),
+    DOJ DATE,
+    DOB DATE,
+    Salary NUMBER,
+    Address VARCHAR2(255),
+    Designation VARCHAR2(100)
+);
+
+-- Insert values into Employee
+INSERT INTO Employee (EmpId, EName, DOJ, DOB, Salary, Address, Designation) VALUES (1, 'John Doe', TO_DATE('2020-01-15', 'YYYY-MM-DD'), TO_DATE('1990-06-25', 'YYYY-MM-DD'), 20000, 'New York', 'Manager');
+INSERT INTO Employee (EmpId, EName, DOJ, DOB, Salary, Address, Designation) VALUES (2, 'Jane Smith', TO_DATE('2018-07-10', 'YYYY-MM-DD'), TO_DATE('1988-03-12', 'YYYY-MM-DD'), 15000, 'Los Angeles', 'Developer');
+INSERT INTO Employee (EmpId, EName, DOJ, DOB, Salary, Address, Designation) VALUES (3, 'Alice Johnson', TO_DATE('2015-05-20', 'YYYY-MM-DD'), TO_DATE('1992-11-10', 'YYYY-MM-DD'), 25000, 'Chicago', 'Analyst');
+
+-- Factorial Table
+CREATE TABLE Factorial (
+    No NUMBER PRIMARY KEY,
+    Fact NUMBER
+);
+
+-- Insert dummy values (table is populated programmatically)
+INSERT INTO Factorial (No, Fact) VALUES (2, 2);
+INSERT INTO Factorial (No, Fact) VALUES (4, 24);
+
+-- Account Table
+CREATE TABLE Account (
+    AccNo NUMBER PRIMARY KEY,
+    Name VARCHAR2(100),
+    Address VARCHAR2(255),
+    PANNo VARCHAR2(15),
+    Mobile VARCHAR2(15),
+    Status VARCHAR2(10),
+    Balance NUMBER,
+    LastTransaction DATE
+);
+
+-- Insert values into Account
+INSERT INTO Account (AccNo, Name, Address, PANNo, Mobile, Status, Balance, LastTransaction) VALUES (101, 'John Doe', 'New York', 'ABCDE1234F', '1234567890', 'Active', 5000, TO_DATE('2024-03-01', 'YYYY-MM-DD'));
+INSERT INTO Account (AccNo, Name, Address, PANNo, Mobile, Status, Balance, LastTransaction) VALUES (102, 'Jane Smith', 'Los Angeles', 'XYZ9876T', '9876543210', 'Active', 15000, TO_DATE('2024-10-01', 'YYYY-MM-DD'));
+INSERT INTO Account (AccNo, Name, Address, PANNo, Mobile, Status, Balance, LastTransaction) VALUES (103, 'Alice Johnson', 'Chicago', 'LMN4567P', '5678912345', 'Active', 3000, TO_DATE('2023-12-01', 'YYYY-MM-DD'));
+
+-- InactiveAccounts Table
+CREATE TABLE InactiveAccounts (
+    AccNo NUMBER PRIMARY KEY,
+    Name VARCHAR2(100),
+    Balance NUMBER
+);
+
+-- Insert dummy values
+INSERT INTO InactiveAccounts (AccNo, Name, Balance) VALUES (101, 'John Doe', 5000);
+

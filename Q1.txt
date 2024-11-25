@@ -1,0 +1,473 @@
+CREATE TABLE Book (
+    Book_Code VARCHAR2(5) PRIMARY KEY,
+    ISBN_No VARCHAR2(8) NOT NULL,
+    Book_Name VARCHAR2(8) UNIQUE,
+    Publisher VARCHAR2(6),
+    Price NUMBER(5, 2) CHECK (Price >= 100),
+    Author_Name VARCHAR2(8),
+    Date_of_Launch DATE
+);
+
+INSERT INTO Book (Book_Code, ISBN_No, Book_Name, Publisher, Price, Author_Name, Date_of_Launch)
+VALUES ('B101', '12345678', 'LetUsC', 'TMH', 500, 'Yashwant', TO_DATE('2022-05-01', 'YYYY-MM-DD'));
+
+INSERT INTO Book (Book_Code, ISBN_No, Book_Name, Publisher, Price, Author_Name, Date_of_Launch)
+VALUES ('B102', '23456789', 'DSA_Laf', 'PHI', 600, 'Robert', TO_DATE('2022-06-15', 'YYYY-MM-DD'));
+
+INSERT INTO Book (Book_Code, ISBN_No, Book_Name, Publisher, Price, Author_Name, Date_of_Launch)
+VALUES ('B103', '34567890', 'OS_Con', 'Pearson', 700, 'Abraham', TO_DATE('2022-07-20', 'YYYY-MM-DD'));
+
+INSERT INTO Book (Book_Code, ISBN_No, Book_Name, Publisher, Price, Author_Name, Date_of_Launch)
+VALUES ('B104', '45678901', 'DBMS_N', 'BPB', 550, 'Navathe', TO_DATE('2022-08-10', 'YYYY-MM-DD'));
+
+ALTER TABLE Book
+MODIFY Book_Name VARCHAR2(10);
+
+SELECT SUM(Price) AS Total_Price
+FROM Book
+WHERE Publisher = 'TMH';
+
+SELECT * 
+FROM Book
+WHERE Author_Name IN ('Yashwant', 'Robert');
+
+DELETE FROM Book
+WHERE Publisher = 'PHI';
+
+UPDATE Book
+SET Price = Price * 1.05
+WHERE Publisher = 'BPB';
+
+CREATE TABLE Author (
+    Author_Id INT PRIMARY KEY,
+    Name VARCHAR2(100),
+    Subject VARCHAR2(50),
+    Contact_Details VARCHAR2(255),
+    Research_Area VARCHAR2(100)
+);
+
+INSERT INTO Author (Author_Id, Name, Subject, Contact_Details, Research_Area)
+VALUES (1, 'Yashwant Kanetkar', 'Programming', 'kanetkar@example.com', 'C Programming');
+
+INSERT INTO Author (Author_Id, Name, Subject, Contact_Details, Research_Area)
+VALUES (2, 'Robert Lafore', 'Data Structures', 'lafore@example.com', 'Data Structures');
+
+INSERT INTO Author (Author_Id, Name, Subject, Contact_Details, Research_Area)
+VALUES (3, 'Mark Allen', 'Web Technologies', 'allen@example.com', 'Web mining');
+
+SELECT * 
+FROM Author
+WHERE Research_Area = 'Web mining';
+
+ALTER TABLE Book
+ADD Author_Id INT;
+
+ALTER TABLE Book
+ADD CONSTRAINT fk_author FOREIGN KEY (Author_Id)
+REFERENCES Author(Author_Id);
+
+UPDATE Book 
+SET Author_Id = (SELECT Author_Id FROM Author WHERE Book.Author_Name = Author.Name);
+
+SELECT * 
+FROM Book
+WHERE Book_Name LIKE 'C%' 
+   OR Book_Name LIKE 'G%' 
+   OR Book_Name LIKE 'K%';
+
+CREATE VIEW Pearson_Books AS
+SELECT Book_Code, Book_Name, Price 
+FROM Book
+WHERE Publisher = 'Pearson';
+
+
+
+
+
+
+
+P2.
+
+CREATE TABLE Student (
+    Roll_no      NUMBER(2) PRIMARY KEY,
+    Name         VARCHAR2(20) NOT NULL,
+    Address      VARCHAR2(50),
+    City         VARCHAR2(30),
+    Marks_Sub1   NUMBER(5,2) CHECK (Marks_Sub1 BETWEEN 0 AND 100),
+    Marks_Sub2   NUMBER(5,2) CHECK (Marks_Sub2 BETWEEN 0 AND 100),
+    Marks_Sub3   NUMBER(5,2) CHECK (Marks_Sub3 BETWEEN 0 AND 100),
+    Total        NUMBER(5,2) CHECK (Total BETWEEN 0 AND 300)
+);
+
+Inserting Sample Data (without total marks)
+INSERT INTO Student (Roll_no, Name, Address, City, Marks_Sub1, Marks_Sub2, Marks_Sub3)
+VALUES (1, 'Kiran', 'Address1', 'Delhi', 75, 80, 85);
+
+INSERT INTO Student (Roll_no, Name, Address, City, Marks_Sub1, Marks_Sub2, Marks_Sub3)
+VALUES (2, 'Aman', 'Address2', 'Mumbai', 60, 70, 65);
+
+INSERT INTO Student (Roll_no, Name, Address, City, Marks_Sub1, Marks_Sub2, Marks_Sub3)
+VALUES (3, 'Rohit', 'Address3', 'Delhi', 90, 95, 88);
+
+
+1. Creating View for Students from 'Delhi'
+CREATE VIEW Delhi_Students AS
+SELECT Roll_no, Name, Total
+FROM Student
+WHERE City = 'Delhi';
+
+2. Calculating Total Marks for Each Student and Saving It
+UPDATE Student
+SET Total = Marks_Sub1 + Marks_Sub2 + Marks_Sub3;
+
+3. Displaying Name of the Student Who Has the Highest Marks
+SELECT Name
+FROM Student
+WHERE Total = (SELECT MAX(Total) FROM Student);
+
+4. Displaying Records of Students Who Scored More Than 'Kiran'
+SELECT *
+FROM Student
+WHERE Total > (SELECT Total FROM Student WHERE Name = 'Kiran');
+
+5. Displaying Percentage of All Students with Their Names
+SELECT Name, (Total / 300) * 100 AS Percentage
+FROM Student;
+
+6. Displaying Names of Students Who Got Maximum Marks in Sub1 and More Than 50 in Sub2 and Sub3
+SELECT Name
+FROM Student
+WHERE Marks_Sub1 = (SELECT MAX(Marks_Sub1) FROM Student)
+AND Marks_Sub2 > 50 AND Marks_Sub3 > 50;
+
+7. Updating Marks of Failed Students (Less Than 40) with Grace Marks of 5
+UPDATE Student
+SET Marks_Sub1 = CASE WHEN Marks_Sub1 < 40 THEN Marks_Sub1 + 5 ELSE Marks_Sub1 END,
+    Marks_Sub2 = CASE WHEN Marks_Sub2 < 40 THEN Marks_Sub2 + 5 ELSE Marks_Sub2 END,
+    Marks_Sub3 = CASE WHEN Marks_Sub3 < 40 THEN Marks_Sub3 + 5 ELSE Marks_Sub3 END
+WHERE Marks_Sub1 < 40 OR Marks_Sub2 < 40 OR Marks_Sub3 < 40;
+
+8. Deleting the Record of the Student Who Got Minimum Marks
+DELETE FROM Student
+WHERE Total = (SELECT MIN(Total) FROM Student);
+
+9. Displaying the Record of the Student Who Got the Second-Highest Marks
+SELECT *
+FROM Student
+WHERE Total = (SELECT MAX(Total) 
+               FROM Student
+               WHERE Total < (SELECT MAX(Total) FROM Student));
+
+10. Displaying the Average Total Marks of All Students City-Wise, Excluding 'Gurgaon'
+SELECT City, AVG(Total) AS Average_Total
+FROM Student
+WHERE City != 'Gurgaon'
+GROUP BY City;
+
+
+11. Getting Names of Students with Roll_no Less Than 30 and Total Marks Greater Than One Student with Roll_no >= 30
+SELECT Name
+FROM Student S1
+WHERE Roll_no < 30
+AND Total > (SELECT MIN(Total) 
+             FROM Student S2 
+             WHERE S2.Roll_no >= 30);
+
+
+P3
+-- Create the tables
+CREATE TABLE Employee (
+    Eid INT PRIMARY KEY,
+    EName VARCHAR(50),
+    Address VARCHAR(100),
+    DateOfJoining DATE,
+    Department VARCHAR(10)
+);
+
+CREATE TABLE Project (
+    Pid INT PRIMARY KEY,
+    PName VARCHAR(50),
+    StartDate DATE,
+    TerminationDate DATE
+);
+
+CREATE TABLE AssignedTo (
+    Eid INT,
+    Pid INT,
+    FOREIGN KEY (Eid) REFERENCES Employee(Eid),
+    FOREIGN KEY (Pid) REFERENCES Project(Pid)
+);
+
+-- Insert sample data for Employee
+INSERT INTO Employee (Eid, EName, Address, DateOfJoining, Department) VALUES
+(1, 'Jai Prakash', 'Delhi', '2020-01-15', 'D01'),
+(2, 'Anil Kumar', 'Mumbai', '2019-03-12', 'D02'),
+(3, 'Ravi Sharma', 'Delhi', '2021-05-23', 'D03'),
+(4, 'Suman Gupta', 'Chennai', '2018-07-08', 'D01'),
+(5, 'Neha Verma', 'Delhi', '2022-09-19', 'D02');
+
+-- Insert sample data for Project
+INSERT INTO Project (Pid, PName, StartDate, TerminationDate) VALUES
+(101, 'Banking', '2021-01-01', '2023-12-31'),
+(102, 'University', '2020-06-15', '2024-01-30'),
+(103, 'ShareMarket', '2019-11-20', '2022-06-30'),
+(104, 'Bank', '2020-03-01', '2022-09-30');
+
+-- Insert sample data for AssignedTo
+INSERT INTO AssignedTo (Eid, Pid) VALUES
+(1, 101),
+(1, 102),
+(2, 103),
+(3, 101),
+(4, 104),
+(5, 102);
+
+-- Queries
+-- 1. Find the employees working on 'Banking' project
+SELECT E.* 
+FROM Employee E
+JOIN AssignedTo A ON E.Eid = A.Eid
+JOIN Project P ON A.Pid = P.Pid
+WHERE P.PName = 'Banking';
+
+-- 2. Find the projects assigned to the employees of D01 or D02
+SELECT DISTINCT P.*
+FROM Project P
+JOIN AssignedTo A ON P.Pid = A.Pid
+JOIN Employee E ON A.Eid = E.Eid
+WHERE E.Department IN ('D01', 'D02');
+
+-- 3. Find the employees who belong to Delhi and work on either 'University' or 'ShareMarket' project
+SELECT E.*
+FROM Employee E
+JOIN AssignedTo A ON E.Eid = A.Eid
+JOIN Project P ON A.Pid = P.Pid
+WHERE E.Address = 'Delhi' AND P.PName IN ('University', 'ShareMarket');
+
+-- 4. Find the employees who do not work on 'University' project
+SELECT E.*
+FROM Employee E
+WHERE NOT EXISTS (
+    SELECT 1 
+    FROM AssignedTo A
+    JOIN Project P ON A.Pid = P.Pid
+    WHERE A.Eid = E.Eid AND P.PName = 'University'
+);
+
+-- 5. Find the employees who work on all projects
+SELECT E.*
+FROM Employee E
+WHERE NOT EXISTS (
+    SELECT P.Pid 
+    FROM Project P
+    WHERE NOT EXISTS (
+        SELECT 1
+        FROM AssignedTo A
+        WHERE A.Eid = E.Eid AND A.Pid = P.Pid
+    )
+);
+
+-- 6. List the employees who have not been assigned any project
+SELECT E.*
+FROM Employee E
+LEFT JOIN AssignedTo A ON E.Eid = A.Eid
+WHERE A.Pid IS NULL;
+
+-- 7. Find the employees who joined the department after the commencement of 'Bank' project
+SELECT E.*
+FROM Employee E
+JOIN Project P ON P.PName = 'Bank'
+WHERE E.DateOfJoining > P.StartDate;
+
+-- 8. Display the start and termination date of projects which are allotted to 'Jai Prakash'
+SELECT P.StartDate, P.TerminationDate
+FROM Project P
+JOIN AssignedTo A ON P.Pid = A.Pid
+JOIN Employee E ON A.Eid = E.Eid
+WHERE E.EName = 'Jai Prakash';
+
+
+
+P4.
+-- Create the tables
+CREATE TABLE Student (
+    Roll INT PRIMARY KEY,
+    SName VARCHAR(50),
+    City VARCHAR(100),
+    Age INT,
+    Gender CHAR(1)
+);
+
+CREATE TABLE Course (
+    Cid INT PRIMARY KEY,
+    CName VARCHAR(50),
+    Semester VARCHAR(10),
+    Credits INT,
+    Fee DECIMAL(10, 2)
+);
+
+CREATE TABLE Enrollment (
+    Roll INT,
+    Cid INT,
+    DateOfReg DATE,
+    FOREIGN KEY (Roll) REFERENCES Student(Roll),
+    FOREIGN KEY (Cid) REFERENCES Course(Cid)
+);
+
+-- Insert sample data for Student
+INSERT INTO Student (Roll, SName, City, Age, Gender) VALUES
+(1, 'Anita', 'Mumbai', 22, 'F'),
+(2, 'Kunal', 'Delhi', 23, 'M'),
+(3, 'Ravi', 'Chennai', 21, 'M'),
+(4, 'Meena', 'Delhi', 20, 'F'),
+(5, 'Arjun', 'Kolkata', 24, 'M');
+
+-- Insert sample data for Course
+INSERT INTO Course (Cid, CName, Semester, Credits, Fee) VALUES
+(101, 'MCA', 'Sem1', 4, 50000.00),
+(102, 'MBA', 'Sem1', 4, 60000.00),
+(103, 'BCA', 'Sem2', 3, 30000.00);
+
+-- Insert sample data for Enrollment
+INSERT INTO Enrollment (Roll, Cid, DateOfReg) VALUES
+(1, 101, '2023-07-15'),
+(2, 102, '2023-08-10'),
+(3, 101, '2023-09-01'),
+(4, 103, '2023-07-20'),
+(5, 101, '2023-08-05');
+
+-- Queries
+-- 1. Find the details of students registered in MCA course
+SELECT S.* 
+FROM Student S
+JOIN Enrollment E ON S.Roll = E.Roll
+JOIN Course C ON E.Cid = C.Cid
+WHERE C.CName = 'MCA';
+
+-- 2. Display the total number of students enrolled in MBA
+SELECT COUNT(*) AS TotalStudents
+FROM Enrollment E
+JOIN Course C ON E.Cid = C.Cid
+WHERE C.CName = 'MBA';
+
+-- 3. Display the names of students who are enrolled in the course in which “Anita” is registered
+SELECT S2.SName
+FROM Student S1
+JOIN Enrollment E1 ON S1.Roll = E1.Roll
+JOIN Course C ON E1.Cid = C.Cid
+JOIN Enrollment E2 ON C.Cid = E2.Cid
+JOIN Student S2 ON E2.Roll = S2.Roll
+WHERE S1.SName = 'Anita';
+
+-- 4. Display the names of all the students with their date of enrollment in the courses
+SELECT S.SName, E.DateOfReg, C.CName
+FROM Student S
+JOIN Enrollment E ON S.Roll = E.Roll
+JOIN Course C ON E.Cid = C.Cid;
+
+-- 5. Display the name of the course in which “Kunal” is registered
+SELECT C.CName
+FROM Course C
+JOIN Enrollment E ON C.Cid = E.Cid
+JOIN Student S ON E.Roll = S.Roll
+WHERE S.SName = 'Kunal';
+
+-- 6. Display the names of boys-students enrolled in MCA
+SELECT S.SName
+FROM Student S
+JOIN Enrollment E ON S.Roll = E.Roll
+JOIN Course C ON E.Cid = C.Cid
+WHERE S.Gender = 'M' AND C.CName = 'MCA';
+
+-- 7. Display the number of students registered in MCA course who live outside Delhi
+SELECT COUNT(*) AS TotalOutsideDelhi
+FROM Student S
+JOIN Enrollment E ON S.Roll = E.Roll
+JOIN Course C ON E.Cid = C.Cid
+WHERE C.CName = 'MCA' AND S.City <> 'Delhi';
+
+
+P5.
+-- Create a sample table
+CREATE TABLE SampleData (
+    Id INT PRIMARY KEY,
+    Name VARCHAR(50),
+    Salary DECIMAL(10, 2),
+    JoinDate DATE
+);
+
+-- Insert sample data
+INSERT INTO SampleData (Id, Name, Salary, JoinDate) VALUES
+(1, 'Alice', 50000.75, '2021-03-15'),
+(2, 'Bob', 42000.00, '2022-07-10'),
+(3, 'Charlie', 62000.50, '2020-11-20'),
+(4, 'David', 38000.25, '2021-12-05'),
+(5, 'Eve', 75000.10, '2019-05-25');
+
+-- Numeric functions
+SELECT 
+    sqrt(Salary) AS SalarySqrt,
+    power(Salary, 2) AS SalaryPower2,
+    ceil(Salary) AS SalaryCeil,
+    floor(Salary) AS SalaryFloor,
+    abs(Salary - 60000) AS SalaryDiffAbs,
+    exp(1) AS ExpValue,
+    mod(Salary, 5000) AS SalaryModulus
+FROM SampleData;
+
+-- Aggregate functions
+SELECT 
+    MAX(Salary) AS MaxSalary,
+    MIN(Salary) AS MinSalary,
+    AVG(Salary) AS AvgSalary,
+    COUNT(*) AS TotalCount,
+    SUM(Salary) AS TotalSalary
+FROM SampleData;
+
+-- Date functions
+SELECT 
+    months_between(SYSDATE, JoinDate) AS MonthsSinceJoining,
+    last_day(JoinDate) AS LastDayOfMonth,
+    add_months(JoinDate, 6) AS SixMonthsLater,
+    next_day(JoinDate, 'Friday') AS NextFriday,
+    SYSDATE AS CurrentDate,
+    round(Salary, 1) AS RoundedSalary,
+    to_char(JoinDate, 'DD-MON-YYYY') AS FormattedJoinDate
+FROM SampleData;
+
+-- Character functions
+SELECT 
+    Name,
+    length(Name) AS NameLength,
+    substr(Name, 1, 3) AS NameSubstring,
+    lower(Name) AS LowercaseName,
+    initcap(Name) AS InitCapName,
+    instr(Name, 'a') AS PositionOfA,
+    concat(Name, ' Employee') AS NameConcat,
+    lpad(Name, 10, '*') AS NameLpad,
+    rpad(Name, 10, '-') AS NameRpad,
+    ltrim('   Sample   ') AS LTrimmed,
+    rtrim('   Sample   ') AS RTrimmed,
+    replace(Name, 'a', '@') AS NameReplaced
+FROM SampleData;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
